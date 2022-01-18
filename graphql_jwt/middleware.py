@@ -14,18 +14,20 @@ __all__ = [
 
 
 def allow_any(info, **kwargs):
-    operation_name = get_operation_name(info.operation.operation).title()
-    field = info.schema.get_type(operation_name).fields.get(info.field_name)
+    try:
+        operation_name = get_operation_name(info.operation.operation).title()
+        field = info.schema.get_type(operation_name).fields.get(info.field_name)
 
-    if field is None:
+        if field is None:
+            return False
+
+        graphene_type = getattr(field.type, "graphene_type", None)
+
+        return graphene_type is not None and issubclass(
+            graphene_type, tuple(jwt_settings.JWT_ALLOW_ANY_CLASSES)
+        )
+    except Exception:
         return False
-
-    graphene_type = getattr(field.type, "graphene_type", None)
-
-    return graphene_type is not None and issubclass(
-        graphene_type, tuple(jwt_settings.JWT_ALLOW_ANY_CLASSES)
-    )
-
 
 def _authenticate(request):
     is_anonymous = not hasattr(request, "user") or request.user.is_anonymous
